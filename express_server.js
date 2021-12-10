@@ -23,10 +23,19 @@ const users = {
   }
 }
 
-function generateRandomString() {
+const generateRandomString = function () {
   let result = Math.random().toString(36).substr(2, 5)
   return result;
 }
+
+  for (let id in users) {
+    const user = users[id];
+
+    if (user.email === email) {
+      res.status(403).send('user already exists');
+      return;
+    }
+  }
 
 app.set("view engine", "ejs")
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -38,13 +47,13 @@ app.get("/", (req, res) => {
 
 app.get("/urls", (req, res) => {
   let id = req.cookies['user_id'];
-  const templateVars = {urls: urlDatabase, user: users[id]};
+  const templateVars = { urls: urlDatabase, user: users[id] };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
   let id = req.cookies['user_id'];
-  const templateVars = {user: users[id]};
+  const templateVars = { user: users[id] };
   res.render("urls_new", templateVars);
 });
 
@@ -71,7 +80,7 @@ app.get("/hello", (req, res) => {
 
 app.get("/register", (req, res) => {
   let id = req.cookies['user_id'];
-  const templateVars = {user: null};
+  const templateVars = { user: null };
 
   res.render("registration", templateVars);
 });
