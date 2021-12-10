@@ -21,6 +21,11 @@
           <%= shortURL %>
         </a></p>
       <p class="card-text">Create URL: <a href="#"></a></p>
+      <form method="POST" action="/urls/<%= shortURL %>">
+        <input name="update" type="text">
+        <button type=submit class="btn btn-primary"> Submit </button>
+      </form>
+
     </div>
     <div class="card-footer text-muted"></div>
   </div>
