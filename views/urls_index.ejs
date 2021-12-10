@@ -15,7 +15,6 @@
   <header>
     <%- include('partials/_header') %>
   </header>
-
   <main style="margin: 1em;">
     <h3>My URLs</h3>
     <table class="table">
@@ -29,10 +28,16 @@
         <% for(let url in urls) {%>
           <tr>
             <td>
-              <%= url %>
+              
+              <%= url %> 
             </td>
             <td>
               <%= urls[url] %>
+            </td>
+            <td>
+              <form method="POST" action="/urls/<%= url %>/delete">
+                <button type = submit class="btn btn-outline-danger"> Delete </button>
+              </form>
             </td>
           </tr>
           <% } %>
