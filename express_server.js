@@ -3,6 +3,8 @@ const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 const { response } = require("express");
+const bcrypt = require('bcryptjs');
+
 
 const PORT = 8080; // default port 8080
 
@@ -138,10 +140,12 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  let email = req.body.email;
-  let password = req.body.password;
+let email = req.body.email;
+const password = req.body.password;
+const hashedPassword = bcrypt.hashSync(password, 10);
 
-  if (!email || !password) {
+
+  if (!email || !hashedPassword) {
     res.status(400).send('Please provide username and password');
     return;
   }
@@ -153,7 +157,7 @@ app.post("/register", (req, res) => {
     users[id] = {
       id,
       email,
-      password
+      hashedPassword
     }
     res.cookie('user_id', id);
     console.log(users);
@@ -215,15 +219,19 @@ app.post("/urls/:id", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const user = fetchUserByEmail(email);
+  console.log(password);
+  const hashedPassword = fetchUserByEmail(email).hashedPassword;
+  const userID = fetchUserByEmail(email).id;
+  console.log(hashedPassword);
+  const compared = bcrypt.compareSync(password, hashedPassword);
 
   //check if credentials exist, if not send an error.
-  if (emailLookup(email) && user.password === password) {
-
-    res.cookie('user_id', user.id);
+; // returns true
+  if (emailLookup(email) && compared) {
+    res.cookie('user_id', userID);
     res.redirect('/urls');
   } else {
-    res.status(403).send('please try again');
+    res.status(403).send('Incorrect username or password');
   }
 });
 
