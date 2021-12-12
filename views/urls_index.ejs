@@ -25,14 +25,13 @@
         </tr>
       </thead>
       <tbody>
-        <% for(let url in urls) {%>
+        <% for(let url in urlsList) {%>
           <tr>
             <td>
-
               <%= url %>
             </td>
             <td>
-              <%= urls[url] %>
+              <%= urlsList[url].longURL%>
             </td>
             <td>
               <form method="POST" action="/urls/<%= url %>/delete">
