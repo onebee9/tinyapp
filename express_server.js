@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const { response } = require("express");
 
 const PORT = 8080; // default port 8080
 
@@ -22,20 +23,26 @@ const users = {
     password: "dishwasher-funk"
   }
 }
-
 const generateRandomString = function () {
   let result = Math.random().toString(36).substr(2, 5)
   return result;
 }
 
-  for (let id in users) {
-    const user = users[id];
+const emailLookup = function (email){// if moving to a different file update parameters to (email,users);
+  return Object.keys(users).filter((key)=> users[key].email === email).length > 0 // array should be empty if nothing is found( checks if user exists).
+}
 
-    if (user.email === email) {
-      res.status(403).send('user already exists');
-      return;
-    }
+const fetchUserByEmail = (email)=>{
+for (let user in users){
+  if(users[user].email == email){
+    return users[user];
   }
+}
+return null;
+}
+
+
+
 
 app.set("view engine", "ejs")
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -78,6 +85,12 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
+app.get("/login", (req, res) => {
+  let id = req.cookies['user_id'];
+  const templateVars = { user: null };
+  res.render("login", templateVars);
+});
+
 app.get("/register", (req, res) => {
   let id = req.cookies['user_id'];
   const templateVars = { user: null };
@@ -86,15 +99,27 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  let id = generateRandomString();
-  users[id] = {
-    id,
-    email: req.body.email,
-    password: req.body.password
+  let email = req.body.email;
+  let password = req.body.password;
+
+  if(!email || !password) {
+    res.status(400).send('Please provide username and password');
+    return;
   }
-  res.cookie('user_id', id);
-  console.log(users);
-  res.redirect('/urls');
+
+  if (emailLookup(email)) {
+    res.status(403).send('user already exists');
+  } else {
+    let id = generateRandomString();
+    users[id] = {
+      id,
+      email,
+      password
+    }
+    res.cookie('user_id', id);
+    console.log(users);
+    res.redirect('/urls');
+  }
 });
 
 app.post("/urls", (req, res) => {
@@ -116,12 +141,22 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  res.redirect('/urls');
+  const email = req.body.email;
+  const password = req.body.password;
+  const user = fetchUserByEmail(email);
+
+  //check if credentials exist, if not send an error.
+  if (emailLookup(email) && user.password === password) {
+
+    res.cookie('user_id', user.id);
+    res.redirect('/urls');
+  } else {
+    res.status(403).send('please try again');
+  }
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
