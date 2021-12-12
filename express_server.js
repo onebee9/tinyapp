@@ -114,7 +114,7 @@ app.post("/register", (req, res) => {
     users[id] = {
       id,
       email,
-      password
+      password:
     }
     res.cookie('user_id', id);
     console.log(users);
@@ -161,5 +161,5 @@ app.post("/logout", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
+  console.log(`Tiny app listening on port ${PORT}!`);
 });
