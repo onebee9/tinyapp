@@ -1,10 +1,10 @@
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
+var cookieSession = require('cookie-session');
 const { response } = require("express");
 const bcrypt = require('bcryptjs');
-
+const {fetchUserByEmail, emailLookup} = require('../tinyapp/helpers');
 
 const PORT = 8080; // default port 8080
 
@@ -19,7 +19,6 @@ const urlDatabase = {
   }
 }
 
-
 const users = {
   "userRandomID": {
     id: "userRandomID",
@@ -32,13 +31,10 @@ const users = {
     password: "dishwasher-funk"
   }
 }
+
 const generateRandomString = function () {
   let result = Math.random().toString(36).substr(2, 5)
   return result;
-}
-
-const emailLookup = function (email) {// if moving to a different file update parameters to (email,users);
-  return Object.keys(users).filter((key) => users[key].email === email).length > 0 // array should be empty if nothing is found( checks if user exists).
 }
 
 const urlsForUser = function (id) {
@@ -51,28 +47,18 @@ let usersUrlList = {};
 return usersUrlList;
 } 
 
-const fetchUserByEmail = (email) => {
-  for (let user in users) {
-    if (users[user].email == email) {
-      return users[user];
-    }
-  }
-  return null;
-}
-
-
-
 
 app.set("view engine", "ejs")
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieSession());
+
 
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
 app.get("/urls", (req, res) => {
-let id = req.cookies['user_id'];
+let id = req.session.user_id;
 let urlsList = urlsForUser(id);
 console.log('this is the url list', urlsList);
  if(id){
@@ -84,7 +70,7 @@ console.log('this is the url list', urlsList);
 });
 
 app.get("/urls/new", (req, res) => {
-  let id = req.cookies['user_id'];
+  let id = req.session.user_id;
   if (id) {
     const templateVars = { user: users[id] };
     res.render("urls_new", templateVars);
@@ -94,7 +80,7 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  let id = req.cookies['user_id'];
+  let id = req.session.user_id;
   let user = users[id];
   let shortURL = req.params.shortURL;
   let longUrl = urlDatabase[shortURL].longURL;
@@ -119,7 +105,7 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  let id = req.cookies['user_id'];
+  let id = req.session.user_id;
 
   if (id) {
     res.redirect("/urls");
@@ -130,7 +116,7 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  let id = req.cookies['user_id'];
+  let id = req.session.user_id;
   if (id) {
     res.redirect("/urls");
   } else {
@@ -139,11 +125,11 @@ app.get("/register", (req, res) => {
   }
 });
 
+
 app.post("/register", (req, res) => {
 let email = req.body.email;
 const password = req.body.password;
 const hashedPassword = bcrypt.hashSync(password, 10);
-
 
   if (!email || !hashedPassword) {
     res.status(400).send('Please provide username and password');
@@ -159,14 +145,14 @@ const hashedPassword = bcrypt.hashSync(password, 10);
       email,
       hashedPassword
     }
-    res.cookie('user_id', id);
+    req.session.user_id = id;
     console.log(users);
     res.redirect('/urls');
   }
 });
 
 app.post("/urls", (req, res) => {
-  let id = req.cookies['user_id'];
+  let id = req.session.user_id;
   if (id) {
     let randomShortURL = generateRandomString();
     console.log(randomShortURL);
@@ -182,7 +168,7 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  let id = req.cookies['user_id'];
+  let id = req.session.user_id;
   let removeURL = req.params.shortURL;
   let usersUrlList = urlsForUser(id);
   let count = 0;
@@ -202,12 +188,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   } else {
     res.status(401).send('You have to log in to delete urls');
   }
-
-  //You do not have the right permissions to do this
-  
-
-  
-  
 });
 
 app.post("/urls/:id", (req, res) => {
@@ -225,10 +205,9 @@ app.post("/login", (req, res) => {
   console.log(hashedPassword);
   const compared = bcrypt.compareSync(password, hashedPassword);
 
-  //check if credentials exist, if not send an error.
-; // returns true
+; // returns true if credentials exist 
   if (emailLookup(email) && compared) {
-    res.cookie('user_id', userID);
+    req.session.user_id = userID;
     res.redirect('/urls');
   } else {
     res.status(403).send('Incorrect username or password');
@@ -236,7 +215,7 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
+  req.session.user_id = null;
   res.redirect('/urls');
 });
 
