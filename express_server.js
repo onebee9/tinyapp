@@ -2,9 +2,14 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 var cookieSession = require('cookie-session');
-const { response } = require("express");
+const {
+  response
+} = require("express");
 const bcrypt = require('bcryptjs');
-const {fetchUserByEmail, emailLookup} = require('../tinyapp/helpers');
+const {
+  fetchUserByEmail,
+  emailLookup
+} = require('../tinyapp/helpers');
 
 const PORT = 8080; // default port 8080
 
@@ -32,24 +37,26 @@ const users = {
   }
 }
 
-const generateRandomString = function () {
+const generateRandomString = function() {
   let result = Math.random().toString(36).substr(2, 5)
   return result;
 }
 
-const urlsForUser = function (id) {
-let usersUrlList = {};
-    for (let key in urlDatabase) {
-      if (urlDatabase[key].userID === id) {
-       usersUrlList[key] = urlDatabase[key];
-      }
+const urlsForUser = function(id) {
+  let usersUrlList = {};
+  for (let key in urlDatabase) {
+    if (urlDatabase[key].userID === id) {
+      usersUrlList[key] = urlDatabase[key];
     }
-return usersUrlList;
-} 
+  }
+  return usersUrlList;
+}
 
 
 app.set("view engine", "ejs")
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
 app.use(cookieSession());
 
 
@@ -58,21 +65,26 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-let id = req.session.user_id;
-let urlsList = urlsForUser(id);
-console.log('this is the url list', urlsList);
- if(id){
-  const templateVars = { urlsList, user: users[id] };
-  res.render("urls_index", templateVars);
- } else {
-  res.send('Login to view the magic');
- }
+  let id = req.session.user_id;
+  let urlsList = urlsForUser(id);
+  console.log('this is the url list', urlsList);
+  if (id) {
+    const templateVars = {
+      urlsList,
+      user: users[id]
+    };
+    res.render("urls_index", templateVars);
+  } else {
+    res.send('Login to view the magic');
+  }
 });
 
 app.get("/urls/new", (req, res) => {
   let id = req.session.user_id;
   if (id) {
-    const templateVars = { user: users[id] };
+    const templateVars = {
+      user: users[id]
+    };
     res.render("urls_new", templateVars);
   } else {
     res.redirect("/login");
@@ -85,7 +97,11 @@ app.get("/urls/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
   let longUrl = urlDatabase[shortURL].longURL;
 
-  const templateVars = { shortURL, longUrl, user };
+  const templateVars = {
+    shortURL,
+    longUrl,
+    user
+  };
   res.render("urls_show", templateVars);
 });
 
@@ -110,7 +126,9 @@ app.get("/login", (req, res) => {
   if (id) {
     res.redirect("/urls");
   } else {
-    const templateVars = { user: null };
+    const templateVars = {
+      user: null
+    };
     res.render("login", templateVars);
   }
 });
@@ -120,16 +138,18 @@ app.get("/register", (req, res) => {
   if (id) {
     res.redirect("/urls");
   } else {
-    const templateVars = { user: null };
+    const templateVars = {
+      user: null
+    };
     res.render("registration", templateVars);
   }
 });
 
 
 app.post("/register", (req, res) => {
-let email = req.body.email;
-const password = req.body.password;
-const hashedPassword = bcrypt.hashSync(password, 10);
+  let email = req.body.email;
+  const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
 
   if (!email || !hashedPassword) {
     res.status(400).send('Please provide username and password');
@@ -173,7 +193,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   let usersUrlList = urlsForUser(id);
   let count = 0;
 
-  if(id){
+  if (id) {
     for (let key in usersUrlList) {
       if (key == removeURL) {
         count = count + 1;
@@ -182,8 +202,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
       }
     }
 
-    if (count < 1){
-    res.status(401).send('This Url does not exist'); 
+    if (count < 1) {
+      res.status(401).send('This Url does not exist');
     }
   } else {
     res.status(401).send('You have to log in to delete urls');
@@ -205,7 +225,7 @@ app.post("/login", (req, res) => {
   console.log(hashedPassword);
   const compared = bcrypt.compareSync(password, hashedPassword);
 
-; // returns true if credentials exist 
+  ; // returns true if credentials exist 
   if (emailLookup(email) && compared) {
     req.session.user_id = userID;
     res.redirect('/urls');
