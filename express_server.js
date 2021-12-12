@@ -67,7 +67,6 @@ app.get("/", (req, res) => {
 app.get("/urls", (req, res) => {
   let id = req.session.user_id;
   let urlsList = urlsForUser(id);
-  console.log('this is the url list', urlsList);
   if (id) {
     const templateVars = {
       urlsList,
@@ -106,7 +105,6 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  console.log(req.params);
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
@@ -166,7 +164,6 @@ app.post("/register", (req, res) => {
       hashedPassword
     }
     req.session.user_id = id;
-    console.log(users);
     res.redirect('/urls');
   }
 });
@@ -175,7 +172,6 @@ app.post("/urls", (req, res) => {
   let id = req.session.user_id;
   if (id) {
     let randomShortURL = generateRandomString();
-    console.log(randomShortURL);
     urlDatabase[randomShortURL] = {
       longURL: req.body.longURL,
       userID: id
@@ -191,8 +187,10 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   let id = req.session.user_id;
   let removeURL = req.params.shortURL;
   let usersUrlList = urlsForUser(id);
+  //If count is not increased, then no matches were found for the shortURL
   let count = 0;
 
+//Checks if the parameter belongs to the logged in user. 
   if (id) {
     for (let key in usersUrlList) {
       if (key == removeURL) {
@@ -219,10 +217,8 @@ app.post("/urls/:id", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  console.log(password);
   const hashedPassword = fetchUserByEmail(email).hashedPassword;
   const userID = fetchUserByEmail(email).id;
-  console.log(hashedPassword);
   const compared = bcrypt.compareSync(password, hashedPassword);
 
   ; // returns true if credentials exist 
