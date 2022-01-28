@@ -2,11 +2,18 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session');
-const { response } = require("express");
 const bcrypt = require('bcryptjs');
 const { fetchUserByEmail, emailLookup } = require('../tinyapp/helpers');
-
 const PORT = 8080; // default port 8080
+
+app.use(cookieSession({
+  name: 'tinyapp_user_session',
+  keys: [0]
+}));
+app.set("view engine", "ejs")
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
 
 const urlDatabase = {
   "b2xVn2": {
@@ -48,11 +55,6 @@ const urlsForUser = function (id) {
 }
 
 
-app.set("view engine", "ejs")
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
-app.use(cookieSession());
 
 
 app.get("/", (req, res) => {
