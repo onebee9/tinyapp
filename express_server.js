@@ -1,15 +1,10 @@
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
-var cookieSession = require('cookie-session');
-const {
-  response
-} = require("express");
+const cookieSession = require('cookie-session');
+const { response } = require("express");
 const bcrypt = require('bcryptjs');
-const {
-  fetchUserByEmail,
-  emailLookup
-} = require('../tinyapp/helpers');
+const { fetchUserByEmail, emailLookup } = require('../tinyapp/helpers');
 
 const PORT = 8080; // default port 8080
 
@@ -37,12 +32,12 @@ const users = {
   }
 }
 
-const generateRandomString = function() {
+const generateRandomString = function () {
   let result = Math.random().toString(36).substr(2, 5)
   return result;
 }
 
-const urlsForUser = function(id) {
+const urlsForUser = function (id) {
   let usersUrlList = {};
   for (let key in urlDatabase) {
     if (urlDatabase[key].userID === id) {
@@ -190,7 +185,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   //If count is not increased, then no matches were found for the shortURL
   let count = 0;
 
-//Checks if the parameter belongs to the logged in user. 
+  //Checks if the parameter belongs to the logged in user. 
   if (id) {
     for (let key in usersUrlList) {
       if (key == removeURL) {
