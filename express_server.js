@@ -3,18 +3,20 @@ const app = express();
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
-const { fetchUserByEmail, emailLookup } = require('../tinyapp/helpers');
-const PORT = 8080; // default port 8080
+const { fetchUserByEmail, emailLookup, generateRandomString } = require('../tinyapp/helpers');
+const PORT = 8080;
 
 app.use(cookieSession({
-  name: 'tinyapp_user_session',
-  keys: [0]
+  name: 'session',
+  keys: ['key1', 'key2']
 }));
+
 app.set("view engine", "ejs")
 app.use(bodyParser.urlencoded({
   extended: true
 }));
 
+//Makeshift database for user provided URLS
 const urlDatabase = {
   "b2xVn2": {
     longURL: "http://www.lighthouselabs.ca",
@@ -26,6 +28,18 @@ const urlDatabase = {
   }
 }
 
+//Retrives urls belonging to unique users
+const urlsForUser = (id) => {
+  const usersUrlList = {};
+  for (const key in urlDatabase) {
+    if (urlDatabase[key].userID === id) {
+      usersUrlList[key] = urlDatabase[key];
+    }
+  }
+  return usersUrlList;
+}
+
+//makeshift database for user personal data
 const users = {
   "userRandomID": {
     id: "userRandomID",
@@ -39,31 +53,14 @@ const users = {
   }
 }
 
-const generateRandomString = function () {
-  let result = Math.random().toString(36).substr(2, 5)
-  return result;
-}
-
-const urlsForUser = function (id) {
-  let usersUrlList = {};
-  for (let key in urlDatabase) {
-    if (urlDatabase[key].userID === id) {
-      usersUrlList[key] = urlDatabase[key];
-    }
-  }
-  return usersUrlList;
-}
-
-
-
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.redirect("/login");
 });
 
 app.get("/urls", (req, res) => {
-  let id = req.session.user_id;
-  let urlsList = urlsForUser(id);
+  const id = req.session.user_id;
+  const urlsList = urlsForUser(id);
   if (id) {
     const templateVars = {
       urlsList,
@@ -71,12 +68,12 @@ app.get("/urls", (req, res) => {
     };
     res.render("urls_index", templateVars);
   } else {
-    res.send('Login to view the magic');
+    res.redirect("/login");
   }
 });
 
 app.get("/urls/new", (req, res) => {
-  let id = req.session.user_id;
+  const id = req.session.user_id;
   if (id) {
     const templateVars = {
       user: users[id]
@@ -88,10 +85,10 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  let id = req.session.user_id;
-  let user = users[id];
-  let shortURL = req.params.shortURL;
-  let longUrl = urlDatabase[shortURL].longURL;
+  const id = req.session.user_id;
+  const user = users[id];
+  const shortURL = req.params.shortURL;
+  const longUrl = urlDatabase[shortURL].longURL;
 
   const templateVars = {
     shortURL,
@@ -116,7 +113,7 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  let id = req.session.user_id;
+  const id = req.session.user_id;
 
   if (id) {
     res.redirect("/urls");
@@ -129,7 +126,7 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  let id = req.session.user_id;
+  const id = req.session.user_id;
   if (id) {
     res.redirect("/urls");
   } else {
@@ -142,33 +139,33 @@ app.get("/register", (req, res) => {
 
 
 app.post("/register", (req, res) => {
-  let email = req.body.email;
+  const email = req.body.email;
   const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
 
-  if (!email || !hashedPassword) {
+  if (email == "" || password == "") {
     res.status(400).send('Please provide username and password');
     return;
-  }
-
-  if (emailLookup(email)) {
+  } else if (emailLookup(email, users)) {
     res.status(403).send('user already exists');
+    return;
   } else {
-    let id = generateRandomString();
+    const id = generateRandomString();
     users[id] = {
       id,
       email,
       hashedPassword
     }
     req.session.user_id = id;
+    console.log(req.session.user_id);
     res.redirect('/urls');
   }
 });
 
 app.post("/urls", (req, res) => {
-  let id = req.session.user_id;
+  const id = req.session.user_id;
   if (id) {
-    let randomShortURL = generateRandomString();
+    const randomShortURL = generateRandomString();
     urlDatabase[randomShortURL] = {
       longURL: req.body.longURL,
       userID: id
@@ -181,15 +178,16 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  let id = req.session.user_id;
-  let removeURL = req.params.shortURL;
-  let usersUrlList = urlsForUser(id);
+  const id = req.session.user_id;
+  const removeURL = req.params.shortURL;
+  const usersUrlList = urlsForUser(id);
+
   //If count is not increased, then no matches were found for the shortURL
   let count = 0;
 
-  //Checks if the parameter belongs to the logged in user. 
+  //Checks that the parameter belongs to the logged in user. 
   if (id) {
-    for (let key in usersUrlList) {
+    for (const key in usersUrlList) {
       if (key == removeURL) {
         count = count + 1;
         delete urlDatabase[removeURL];
@@ -206,7 +204,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/urls/:id", (req, res) => {
-  let newUrl = req.body.update;
+  const newUrl = req.body.update;
   urlDatabase[req.params.id].longURL = newUrl;
   res.redirect('/urls');
 });
@@ -214,14 +212,25 @@ app.post("/urls/:id", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const hashedPassword = fetchUserByEmail(email).hashedPassword;
-  const userID = fetchUserByEmail(email).id;
-  const compared = bcrypt.compareSync(password, hashedPassword);
 
-  ; // returns true if credentials exist 
-  if (emailLookup(email) && compared) {
-    req.session.user_id = userID;
-    res.redirect('/urls');
+  // Ensures that users provide an email and password
+  if (email == "" || password == "") {
+    res.status(400).send('Please provide username and password');
+  }
+
+  // Checks that the email exists and pulls the users data
+  else if (emailLookup(email, users)) {
+    const hashedPassword = fetchUserByEmail(email, users).hashedPassword;
+    const userID = fetchUserByEmail(email, users).id;
+    const compared = bcrypt.compareSync(password, hashedPassword);
+
+    // Confirms that the password matches one in the database
+    if (compared) {
+      req.session.user_id = userID;
+      res.redirect('/urls');
+    } else {
+      res.status(403).send('Incorrect password');
+    }
   } else {
     res.status(403).send('Incorrect username or password');
   }
