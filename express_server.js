@@ -3,12 +3,17 @@ const app = express();
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
-const { fetchUserByEmail, emailLookup, generateRandomString } = require('../tinyapp/helpers');
+const {
+  fetchUserByEmail,
+  emailLookup,
+  generateRandomString
+} = require('../tinyapp/helpers');
 const PORT = 8080;
 
 app.use(cookieSession({
   name: 'session',
-  keys: ['key1', 'key2']
+  keys: ['key1', 'key2'],
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
 
 app.set("view engine", "ejs")
@@ -53,7 +58,6 @@ const users = {
   }
 }
 
-
 app.get("/", (req, res) => {
   res.redirect("/login");
 });
@@ -82,20 +86,6 @@ app.get("/urls/new", (req, res) => {
   } else {
     res.redirect("/login");
   }
-});
-
-app.get("/urls/:shortURL", (req, res) => {
-  const id = req.session.user_id;
-  const user = users[id];
-  const shortURL = req.params.shortURL;
-  const longUrl = urlDatabase[shortURL].longURL;
-
-  const templateVars = {
-    shortURL,
-    longUrl,
-    user
-  };
-  res.render("urls_show", templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -162,6 +152,21 @@ app.post("/register", (req, res) => {
   }
 });
 
+
+app.post("/urls/:shortURL", (req, res) => {
+  const id = req.session.user_id;
+  const user = users[id];
+  const shortURL = req.params.shortURL;
+  const longURl = urlDatabase[shortURL].longURL;
+
+  const templateVars = {
+    shortURL,
+    longURl,
+    user
+  };
+  res.render("urls_show", templateVars);
+});
+
 app.post("/urls", (req, res) => {
   const id = req.session.user_id;
   if (id) {
@@ -170,8 +175,7 @@ app.post("/urls", (req, res) => {
       longURL: req.body.longURL,
       userID: id
     };
-
-    res.redirect(`/urls/${randomShortURL}`);
+    res.redirect(`/urls`);
   } else {
     res.status(401).send('You do not have the right permissions to do this');
   }
@@ -203,7 +207,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   }
 });
 
-app.post("/urls/:id", (req, res) => {
+app.post("/url/:id", (req, res) => {
   const newUrl = req.body.update;
   urlDatabase[req.params.id].longURL = newUrl;
   res.redirect('/urls');
@@ -216,10 +220,9 @@ app.post("/login", (req, res) => {
   // Ensures that users provide an email and password
   if (email == "" || password == "") {
     res.status(400).send('Please provide username and password');
-  }
 
-  // Checks that the email exists and pulls the users data
-  else if (emailLookup(email, users)) {
+    // Checks that the email exists and pulls the users data
+  } else if (emailLookup(email, users)) {
     const hashedPassword = fetchUserByEmail(email, users).hashedPassword;
     const userID = fetchUserByEmail(email, users).id;
     const compared = bcrypt.compareSync(password, hashedPassword);
@@ -237,8 +240,8 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  req.session.user_id = null;
-  res.redirect('/urls');
+  req.session = null;
+  res.redirect('/login');
 });
 
 app.listen(PORT, () => {
