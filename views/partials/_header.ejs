@@ -8,19 +8,18 @@
     <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
       <div class="navbar-nav">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
-        <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
       <% if(user){ %>
         <%=user.email%>
           <form method="post" action="/logout">
-            <button class="btn btn-primary"> Logout </button>
+            <button class="btn btn-primary" style="margin-left: 40px;"> Logout </button>
           </form>
           <% } else{ %>
-            <form method="get" action="/register">
-              <button type=submit class="btn btn-primary">Register</button>
+            <form method="GET" action="/register" style="margin-left: 20px;">
+              <button type=submit class="btn btn-primary" t>Register</button>
             </form>
 
-            <form method="get" action="/login">
+            <form method="GET" action="/login" style="margin-left: 10px;">
               <button type=submit class="btn btn-primary">Login</button>
             </form>
 
