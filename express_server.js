@@ -8,7 +8,7 @@ const {
   emailLookup,
   generateRandomString
 } = require('../tinyapp/helpers');
-const PORT = 8080;
+const PORT = 3000;
 
 app.use(cookieSession({
   name: 'session',
@@ -58,9 +58,12 @@ const users = {
   }
 }
 
+//home
 app.get("/", (req, res) => {
   res.redirect("/login");
 });
+
+//resource routes
 
 app.get("/urls", (req, res) => {
   const id = req.session.user_id;
@@ -101,57 +104,6 @@ app.get("/urls.json", (req, res) => {
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
-
-app.get("/login", (req, res) => {
-  const id = req.session.user_id;
-
-  if (id) {
-    res.redirect("/urls");
-  } else {
-    const templateVars = {
-      user: null
-    };
-    res.render("login", templateVars);
-  }
-});
-
-app.get("/register", (req, res) => {
-  const id = req.session.user_id;
-  if (id) {
-    res.redirect("/urls");
-  } else {
-    const templateVars = {
-      user: null
-    };
-    res.render("registration", templateVars);
-  }
-});
-
-
-app.post("/register", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-  const hashedPassword = bcrypt.hashSync(password, 10);
-
-  if (email == "" || password == "") {
-    res.status(400).send('Please provide username and password');
-    return;
-  } else if (emailLookup(email, users)) {
-    res.status(403).send('user already exists');
-    return;
-  } else {
-    const id = generateRandomString();
-    users[id] = {
-      id,
-      email,
-      hashedPassword
-    }
-    req.session.user_id = id;
-    console.log(req.session.user_id);
-    res.redirect('/urls');
-  }
-});
-
 
 app.post("/urls/:shortURL", (req, res) => {
   const id = req.session.user_id;
@@ -211,6 +163,57 @@ app.post("/url/:id", (req, res) => {
   const newUrl = req.body.update;
   urlDatabase[req.params.id].longURL = newUrl;
   res.redirect('/urls');
+});
+
+
+//user routes-------
+app.get("/login", (req, res) => {
+  const id = req.session.user_id;
+
+  if (id) {
+    res.redirect("/urls");
+  } else {
+    const templateVars = {
+      user: null
+    };
+    res.render("login", templateVars);
+  }
+});
+
+app.get("/register", (req, res) => {
+  const id = req.session.user_id;
+  if (id) {
+    res.redirect("/urls");
+  } else {
+    const templateVars = {
+      user: null
+    };
+    res.render("registration", templateVars);
+  }
+});
+
+
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
+
+  if (email == "" || password == "") {
+    res.status(400).send('Please provide username and password');
+    return;
+  } else if (emailLookup(email, users)) {
+    res.status(403).send('user already exists, try again');
+    return;
+  } else {
+    const id = generateRandomString();
+    users[id] = {
+      id,
+      email,
+      hashedPassword
+    }
+    req.session.user_id = id;
+    res.redirect('/urls');
+  }
 });
 
 app.post("/login", (req, res) => {
